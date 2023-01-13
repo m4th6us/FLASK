@@ -1,5 +1,8 @@
 from flask import Flask, request
 import json
+from models import Models
+
+functions = Models()
 
 
 list_tasks = []
@@ -17,46 +20,24 @@ def index():
 
 @app.route('/list_all_tasks', methods=['GET'])
 def list_all_tasks():
-
-    if list_tasks != []:
-        response = list_tasks
-    else:
-        response = {'mensagem': 'não existem tasks adicione uma atráves do caminho /add_tasks método post'}
-    return response
+    return functions.list_all_tasks()
 
 
 @app.route('/list_task_id/<int:id>', methods=['GET'])
 def list_task_id(id):
     try:
-        response = list_tasks[id]
-    except IndexError:
-        response = {'mensagem': f'id de tarefa {id} não existe'}
-
-    return response
+        return functions.list_task_id(id)
+    except:
+        return {'mensagem':f'a task de id {id} não existe!'}
 
 @app.route('/add_tasks', methods=['POST'])
 def add_tasks():
-    dados = json.loads(request.data)
-    if list_tasks:
-        dados['id'] = list_tasks[-1]['id'] + 1
-    else:
-        dados['id'] = 0
-    list_tasks.append(dados)
-
-    return {'status':'sucesso','task adicionada':list_tasks[-1]}
+    return functions.add_tasks()
 
 @app.route('/delete_task_id/<int:id>', methods=['DELETE'])
 def delete_task_id(id):
-    if list_tasks != []:
-        for item in list_tasks:
-            if str(item['id']) == str(id):
-                list_tasks.remove(item)
-                response = list_tasks
-    else:
-        response = {'status':'erro','mensagem':'não existem tarefas na api, adicione uma pelo endpoint /add_tasks'}
-
-    return response
+    return functions.delete_task_id(id)
 
     
 if __name__ == '__main__':
-    app.run(host='192.168.230.24')
+    app.run()
