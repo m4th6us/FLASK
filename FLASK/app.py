@@ -1,11 +1,8 @@
-from flask import Flask, request
-import json
+from flask import Flask
 from models import Models
 
 functions = Models()
 
-
-list_tasks = []
 app = Flask(__name__)
 
 @app.route('/')
@@ -34,10 +31,10 @@ def list_task_id(id):
 def add_tasks():
     return functions.add_tasks()
 
-@app.route('/delete_task_id/<int:id>', methods=['DELETE'])
-def delete_task_id(id):
-    return functions.delete_task_id(id)
+@app.route('/delete_task_id', methods=['DELETE'])
+def delete_task_id():
+    return functions.delete_task_id()
 
     
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=True)

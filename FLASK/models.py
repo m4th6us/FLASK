@@ -1,9 +1,11 @@
 import json
 from flask import request
+from connect_to_mongo import Mongo
 
 class Models:
 
     def __init__(self):
+        self.mongo = Mongo()
         self.list_tasks = []
 
     def index():
@@ -17,40 +19,33 @@ class Models:
 
     def list_all_tasks(self):
 
-        if self.list_tasks != []:
-            response = self.list_tasks
+        if self.mongo.get_mongo() != []:
+            response = self.mongo.get_mongo()
         else:
             response = {'mensagem': 'não existem tasks adicione uma atráves do caminho /add_tasks método post'}
         return response
 
 
     def list_task_id(self,id):
-        
-        for itens in self.list_tasks:
-            if itens['id'] == id:
+
+        for itens in self.mongo.get_mongo()['documents']:
+            if str(itens['id']) == str(id):
                 response = itens
-                
+
         return response
 
     def add_tasks(self):
-        
+
         dados = json.loads(request.data)
-        if self.list_tasks:
-            dados['id'] = self.list_tasks[-1]['id'] + 1
-        else:
-            dados['id'] = 0
-        self.list_tasks.append(dados)
+        try:
+            dados['id'] = [itens['id'] for itens in self.mongo.get_mongo()['documents']][-1] + 1
+        except IndexError:
+            dados['id'] = 1
 
-        return {'status':'sucesso','task adicionada':self.list_tasks[-1]}
+        self.mongo.insert_mongo([dados])
+        return {'task':self.mongo.get_mongo()['documents'][-1], 'mensagem':'inserida no MongoCloud'}
 
-    def delete_task_id(self,id):
-        if self.list_tasks != []:
-            for item in self.list_tasks:
-                if str(item['id']) == str(id):
-                    self.list_tasks.remove(item)
-                    response = self.list_tasks
-        else:
-            response = {'status':'erro','mensagem':'não existem tarefas na api, adicione uma pelo endpoint /add_tasks'}
+    def delete_task_id(self):
+        response =self.mongo.delete_mongo(self.mongo.get_mongo())
 
         return response
-
