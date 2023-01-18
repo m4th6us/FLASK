@@ -1,51 +1,107 @@
 import json
 from flask import request
-from connect_to_mongo import Mongo
+from back_mongo import Mongo
 
 class Models:
 
     def __init__(self):
         self.mongo = Mongo()
-        self.list_tasks = []
-
-    def index():
-        return '''
-        <h1>Bem vindo a página inicial da API</h1>\n
-        <h2>Caminhos da api:</h2>\n
-        <p>/list_all_tasks - lista todas as tarefas presentes na api.</p>\n
-        <p>/list_task_id/id - lista as tarefas presentes na api pelo id.</p>\n
-        <p>/add_tasks - adiciona tarefas na api.</p>\n
-        <p>/delete_task_id/id - lista todas as tarefas presentes na api.</p>\n'''
 
     def list_all_tasks(self):
+        '''
+        this function list all tasks in the mongodb
+        '''
+        data = self.mongo.get_mongo()['documents']
+        itens = {}
+        lista = []
 
-        if self.mongo.get_mongo() != []:
-            response = self.mongo.get_mongo()
+        for i in data:
+            print(i)
+            itens = {
+                'id': i['id'],
+                'task': i['task'],
+                'status': i['status']
+            }
+            lista.append(itens)
+
+        if lista != []:
+            response = lista
         else:
-            response = {'mensagem': 'não existem tasks adicione uma atráves do caminho /add_tasks método post'}
+            response = []
+
         return response
 
-
     def list_task_id(self,id):
+        '''
+        this function list the tasks by id
+        '''
+        
+        data = self.mongo.get_mongo()
+        response = {'message':f'task id {id} not exists in api'}
+        itens = {}
+        lista = []
 
-        for itens in self.mongo.get_mongo()['documents']:
-            if str(itens['id']) == str(id):
-                response = itens
+        for i in data['documents']:
+            if i['id'] == id:
+                itens = {
+                    'id': i['id'],
+                    'task': i['task'],
+                    'status': i['status']
+                }
+                lista.append(itens)
+                response = lista
 
         return response
 
     def add_tasks(self):
-
-        dados = json.loads(request.data)
+        '''
+        this function add tasks in mongodb cloud and add id auto incremente
+        '''
         try:
-            dados['id'] = [itens['id'] for itens in self.mongo.get_mongo()['documents']][-1] + 1
-        except IndexError:
-            dados['id'] = 1
+            data = json.loads(request.data)
+            data['id'] = [i['id'] for i in self.mongo.get_mongo()['documents']][-1] + 1
 
-        self.mongo.insert_mongo([dados])
-        return {'task':self.mongo.get_mongo()['documents'][-1], 'mensagem':'inserida no MongoCloud'}
+        except:
+            data['id'] = 1
 
-    def delete_task_id(self):
-        response =self.mongo.delete_mongo(self.mongo.get_mongo())
+        self.mongo.insert_mongo([data])
+
+        response = {'message':f'id record {data["id"]} successfully added'}
+        return response
+
+    def update_task(self, id):
+
+        # try:
+        data = self.mongo.get_mongo()['documents']
+        dados = json.loads(request.data)
+        response = {'message': f'task id {id} not exist'}
+
+        for itens in data:
+            if itens['id'] == id:
+                dados['_id'] = itens['_id']
+
+                self.mongo.update_mongo(dados)
+                response = {'message': f'task id {id} update successfully'}
+                
+
+        # except IndexError:
+        #     response = {'message': 'There are still no records in the api, add one via the /add_tasks endpoint'}
+            
+        return response
+        
+    def delete_task_id(self,id):
+        '''
+        this functions delete tasks in mongodb cloud by id
+        '''
+        response = {'message': 'There are still no records in the api, add one via the /add_tasks endpoint'}
+
+        try:
+            data = self.mongo.get_mongo()['documents']
+            for itens in data:
+                if itens['id'] == id:
+                    response = {'message': f'task id {id} deleted successfully'}
+                    self.mongo.delete_mongo(itens['_id'])
+        except:
+            response = {'message': f'task id {id} not exist'}
 
         return response
